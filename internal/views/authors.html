@@ -1,0 +1,23 @@
+{{define "title"}}Autores{{end}}
+{{define "content"}}
+<h1 class="text-3xl font-bold text-gray-800 mb-8">Autores</h1>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {{range .Authors}}
+    <div class="bg-white rounded-xl shadow hover:shadow-md transition p-6 flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold flex-shrink-0">
+            {{slice .Name 0 1}}
+        </div>
+        <div class="min-w-0">
+            <h2 class="font-semibold text-gray-800">{{.Name}}</h2>
+            {{if .Bio}}
+            <p class="text-sm text-gray-500 mt-1 line-clamp-3">{{.Bio}}</p>
+            {{else}}
+            <p class="text-sm text-gray-400 mt-1 italic">Sin biografía</p>
+            {{end}}
+        </div>
+    </div>
+    {{else}}
+    <p class="text-gray-400 col-span-3 text-center py-12">No hay autores registrados aún.</p>
+    {{end}}
+</div>
+{{end}}

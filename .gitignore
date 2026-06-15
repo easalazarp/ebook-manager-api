@@ -1,0 +1,18 @@
+# Binaries
+/e-book
+/server
+*.exe
+
+# Environment
+.env
+.kiro
+DOCUMENTACION.md
+README.md
+# Go
+vendor/
+*.test
+*.out
+
+# OS
+.DS_Store
+Thumbs.db

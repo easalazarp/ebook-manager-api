@@ -1,0 +1,31 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}E-Books{{end}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-indigo-700 text-white px-6 py-3 flex items-center justify-between shadow">
+        <a href="/" class="font-bold text-lg tracking-tight">📚 E-Book Catalog</a>
+        <div class="flex items-center gap-4">
+            <a href="/" class="text-sm hover:underline">Catálogo</a>
+            <a href="/authors" class="text-sm hover:underline">Autores</a>
+            {{if .UserID}}
+            <form method="POST" action="/logout">
+                <button class="text-sm hover:underline">Cerrar sesión</button>
+            </form>
+            {{else}}
+            <a href="/login" class="text-sm hover:underline">Iniciar sesión</a>
+            <a href="/register" class="text-sm bg-white text-indigo-700 px-3 py-1 rounded-lg font-semibold hover:bg-indigo-50">Registrarse</a>
+            {{end}}
+        </div>
+    </nav>
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        {{block "content" .}}{{end}}
+    </main>
+</body>
+</html>
+{{end}}
