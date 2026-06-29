@@ -1,31 +1,105 @@
 {{define "layout"}}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{block "title" .}}E-Books{{end}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
+
+    <!-- ── Spinner overlay ─────────────────────────────────────────────────
+         Se muestra cuando el usuario hace submit en cualquier formulario.
+         Se oculta automáticamente si el servidor responde con error (el HTML
+         se recarga y el overlay nunca se inyectó de nuevo).
+    ──────────────────────────────────────────────────────────────────────── -->
+    <div id="spinner-overlay"
+        class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+        <div class="flex flex-col items-center gap-4 bg-white rounded-2xl shadow-lg px-10 py-8 border border-gray-100">
+            <!-- Anillo giratorio -->
+            <svg class="animate-spin w-10 h-10 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <p id="spinner-msg" class="text-sm font-medium text-gray-600">Procesando…</p>
+        </div>
+    </div>
+
     <nav class="bg-indigo-700 text-white px-6 py-3 flex items-center justify-between shadow">
         <a href="/" class="font-bold text-lg tracking-tight">📚 E-Book Catalog</a>
         <div class="flex items-center gap-4">
             <a href="/" class="text-sm hover:underline">Catálogo</a>
             <a href="/authors" class="text-sm hover:underline">Autores</a>
             {{if .UserID}}
+            <a href="/admin" class="text-sm hover:underline">⚙ Admin</a>
             <form method="POST" action="/logout">
                 <button class="text-sm hover:underline">Cerrar sesión</button>
             </form>
             {{else}}
             <a href="/login" class="text-sm hover:underline">Iniciar sesión</a>
-            <a href="/register" class="text-sm bg-white text-indigo-700 px-3 py-1 rounded-lg font-semibold hover:bg-indigo-50">Registrarse</a>
+            <a href="/register"
+                class="text-sm bg-white text-indigo-700 px-3 py-1 rounded-lg font-semibold hover:bg-indigo-50">Registrarse</a>
             {{end}}
         </div>
     </nav>
     <main class="max-w-6xl mx-auto px-4 py-8">
         {{block "content" .}}{{end}}
     </main>
+
+    <script>
+        // ── Spinner global ────────────────────────────────────────────────────
+        // Muestra el overlay al hacer submit en cualquier formulario que no sea
+        // de logout o confirmación de borrado (esos son instantáneos).
+        // El mensaje cambia según la acción detectada en el action del form.
+        (function () {
+            const overlay = document.getElementById('spinner-overlay');
+            const msg = document.getElementById('spinner-msg');
+
+            // Mapeo de fragmentos de URL a mensajes amigables
+            const messages = [
+                ['/ebooks', 'Subiendo e-book…'],
+                ['/authors', 'Guardando autor…'],
+                ['/categories', 'Guardando categoría…'],
+                ['/login', 'Iniciando sesión…'],
+                ['/register', 'Creando cuenta…'],
+            ];
+
+            function labelFor(action) {
+                for (const [key, label] of messages) {
+                    if (action.includes(key)) return label;
+                }
+                return 'Procesando…';
+            }
+
+            document.addEventListener('submit', function (e) {
+                const form = e.target;
+                const action = form.getAttribute('action') || '';
+
+                // No mostrar spinner en logout ni en formularios de eliminar
+                if (action.includes('/logout') || action.includes('/delete')) return;
+
+                // Tampoco en el selector de tamaño de página (GET rápido)
+                if (form.method && form.method.toUpperCase() === 'GET') return;
+
+                msg.textContent = labelFor(action);
+                overlay.classList.remove('hidden');
+
+                // Salvaguarda: ocultar después de 30s por si algo falla silenciosamente
+                setTimeout(function () {
+                    overlay.classList.add('hidden');
+                }, 30000);
+            });
+
+            // Ocultar si el usuario vuelve con el botón "atrás" del navegador
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) overlay.classList.add('hidden');
+            });
+        })();
+    </script>
 </body>
+
 </html>
 {{end}}

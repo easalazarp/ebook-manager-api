@@ -1,0 +1,262 @@
+{{define "title"}}Nuevo E-Book — Admin{{end}}
+{{define "content"}}
+<div class="max-w-3xl mx-auto">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm mb-6">
+        <a href="/admin" class="text-gray-400 hover:text-gray-600 transition">Panel</a>
+        <span class="text-gray-300">›</span>
+        <span class="text-gray-700 font-medium">Nuevo E-Book</span>
+    </div>
+
+    {{if .Error}}
+    <div
+        class="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium flex items-start gap-2">
+        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd" />
+        </svg>
+        {{.Error}}
+    </div>
+    {{end}}
+
+    <form method="POST" action="/admin/ebooks" enctype="multipart/form-data">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- ── Columna izquierda: portada ─────────────────── -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 sticky top-6">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Portada</p>
+
+                    <!-- Zona de drop de imagen -->
+                    <div class="relative">
+                        <!-- Preview de la imagen -->
+                        <div id="cover-preview-container"
+                            class="w-full aspect-[2/3] rounded-lg overflow-hidden bg-indigo-50 border-2 border-dashed border-indigo-200 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 transition"
+                            onclick="document.getElementById('cover').click()">
+                            <!-- Placeholder cuando no hay imagen -->
+                            <div id="cover-placeholder" class="text-center p-4">
+                                <svg class="w-10 h-10 text-indigo-200 mx-auto mb-2" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="text-xs text-indigo-400 font-medium">Haz clic para subir</p>
+                                <p class="text-xs text-indigo-300 mt-0.5">JPG, PNG o WebP</p>
+                            </div>
+                            <!-- Imagen preview (oculta hasta seleccionar) -->
+                            <img id="cover-img" src="" alt="Portada" class="hidden w-full h-full object-cover">
+                        </div>
+
+                        <input type="file" id="cover" name="cover"
+                            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" class="hidden"
+                            onchange="previewCover(this)">
+
+                        <!-- Botón para quitar imagen seleccionada -->
+                        <button type="button" id="cover-remove" onclick="removeCover()"
+                            class="hidden absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-800/60 text-white text-xs flex items-center justify-center hover:bg-gray-800 transition">
+                            ×
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-gray-400 mt-2 text-center">
+                        Opcional · máx. 5 MB<br>Recomendado: 400 × 600 px
+                    </p>
+                </div>
+            </div>
+
+            <!-- ── Columna derecha: metadatos + archivo ───────── -->
+            <div class="lg:col-span-2 space-y-5">
+
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Información del libro</p>
+
+                    <!-- Título -->
+                    <div>
+                        <label for="title" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Título <span class="text-red-400">*</span>
+                        </label>
+                        <input type="text" id="title" name="title" required placeholder="Ej: Clean Code"
+                            class="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                    </div>
+
+                    <!-- Descripción -->
+                    <div>
+                        <label for="description" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Descripción
+                        </label>
+                        <textarea id="description" name="description" rows="4"
+                            placeholder="Resumen del libro, tema principal, a quién va dirigido..."
+                            class="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition"></textarea>
+                    </div>
+
+                    <!-- Autor -->
+                    <div>
+                        <label for="author_id" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Autor <span class="text-red-400">*</span>
+                        </label>
+                        {{if .Authors}}
+                        <select id="author_id" name="author_id" required
+                            class="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white">
+                            <option value="">Selecciona un autor…</option>
+                            {{range .Authors}}
+                            <option value="{{.ID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                        {{else}}
+                        <div
+                            class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            <span>No hay autores.
+                                <a href="/admin/authors/new" class="underline font-medium">Crea uno primero</a>
+                            </span>
+                        </div>
+                        <input type="hidden" name="author_id" value="">
+                        {{end}}
+                    </div>
+                </div>
+
+                <!-- Archivo del e-book -->
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Archivo del libro</p>
+
+                    <!-- Formato -->
+                    <div>
+                        <label for="format" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Formato <span class="text-red-400">*</span>
+                        </label>
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="format" value="pdf" class="sr-only peer" required>
+                                <div class="border-2 border-gray-200 rounded-lg p-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide
+                                            peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700
+                                            hover:border-gray-300 transition select-none">PDF</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="format" value="epub" class="sr-only peer">
+                                <div class="border-2 border-gray-200 rounded-lg p-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide
+                                            peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700
+                                            hover:border-gray-300 transition select-none">EPUB</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="format" value="mobi" class="sr-only peer">
+                                <div class="border-2 border-gray-200 rounded-lg p-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide
+                                            peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700
+                                            hover:border-gray-300 transition select-none">MOBI</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Archivo -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Archivo <span class="text-red-400">*</span>
+                            <span class="font-normal text-gray-400 ml-1">máx. 50 MB</span>
+                        </label>
+                        <div id="file-drop"
+                            class="border-2 border-dashed border-gray-200 rounded-lg p-5 text-center hover:border-indigo-400 transition cursor-pointer"
+                            onclick="document.getElementById('file').click()">
+                            <input type="file" id="file" name="file" required
+                                accept=".pdf,.epub,.mobi,application/pdf,application/epub+zip" class="hidden"
+                                onchange="updateFileName(this)">
+                            <div id="file-idle">
+                                <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p class="text-sm text-gray-400">Haz clic para seleccionar el archivo</p>
+                                <p class="text-xs text-gray-300 mt-1">PDF · EPUB · MOBI</p>
+                            </div>
+                            <div id="file-ready" class="hidden">
+                                <svg class="w-8 h-8 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p class="text-sm font-semibold text-gray-700" id="file-name"></p>
+                                <p class="text-xs text-gray-400 mt-1" id="file-size"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex items-center justify-between">
+                    <a href="/admin" class="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
+                        ← Cancelar
+                    </a>
+                    <button type="submit"
+                        class="px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Subir E-Book
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<script>
+    // ── Preview de portada ──────────────────────────────────────────
+    function previewCover(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+
+        // Validar tamaño antes de mostrar preview (máx 5 MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('La imagen de portada no puede superar los 5 MB.');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('cover-placeholder').classList.add('hidden');
+            const img = document.getElementById('cover-img');
+            img.src = e.target.result;
+            img.classList.remove('hidden');
+            document.getElementById('cover-remove').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeCover() {
+        document.getElementById('cover').value = '';
+        document.getElementById('cover-img').classList.add('hidden');
+        document.getElementById('cover-img').src = '';
+        document.getElementById('cover-placeholder').classList.remove('hidden');
+        document.getElementById('cover-remove').classList.add('hidden');
+    }
+
+    // ── Preview del archivo del e-book ─────────────────────────────
+    function updateFileName(input) {
+        const idle = document.getElementById('file-idle');
+        const ready = document.getElementById('file-ready');
+        const nameEl = document.getElementById('file-name');
+        const sizeEl = document.getElementById('file-size');
+
+        if (input.files && input.files.length > 0) {
+            const f = input.files[0];
+            nameEl.textContent = f.name;
+            sizeEl.textContent = formatBytes(f.size);
+            idle.classList.add('hidden');
+            ready.classList.remove('hidden');
+        } else {
+            idle.classList.remove('hidden');
+            ready.classList.add('hidden');
+        }
+    }
+
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+</script>
+{{end}}

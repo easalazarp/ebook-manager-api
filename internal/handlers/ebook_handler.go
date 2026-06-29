@@ -32,6 +32,20 @@ func (h *EBookHandler) Routes(r chi.Router) {
 	r.Delete("/{id}", h.DeleteEBook)
 }
 
+// CreateEBook godoc
+//
+//	@Summary		Crear e-book
+//	@Description	Crea un nuevo e-book. Requiere autenticación JWT.
+//	@Tags			ebooks
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			body	body		service.CreateEBookInput	true	"Datos del e-book"
+//	@Success		201		{object}	models.EBook
+//	@Failure		400		{object}	map[string]string
+//	@Failure		401		{object}	map[string]string
+//	@Failure		500		{object}	map[string]string
+//	@Router			/ebooks [post]
 func (h *EBookHandler) CreateEBook(w http.ResponseWriter, r *http.Request) {
 	var input service.CreateEBookInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -41,16 +55,32 @@ func (h *EBookHandler) CreateEBook(w http.ResponseWriter, r *http.Request) {
 
 	ebook, err := h.svc.CreateEBook(r.Context(), input)
 	if err != nil {
+		// Distinguir errores de dominio (400) de errores internos (500)
 		if models.IsErrInvalidFormat(err) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		writeError(w, http.StatusBadRequest, err.Error())
+		fmt.Fprintf(os.Stderr, "CreateEBook: %v\n", err)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	writeJSON(w, http.StatusCreated, ebook)
 }
 
+// GetEBook godoc
+//
+//	@Summary		Obtener e-book por ID
+//	@Description	Devuelve un e-book por su UUID. Requiere autenticación JWT.
+//	@Tags			ebooks
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"UUID del e-book"	format(uuid)
+//	@Success		200	{object}	models.EBook
+//	@Failure		400	{object}	map[string]string
+//	@Failure		401	{object}	map[string]string
+//	@Failure		404	{object}	map[string]string
+//	@Failure		500	{object}	map[string]string
+//	@Router			/ebooks/{id} [get]
 func (h *EBookHandler) GetEBook(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -71,19 +101,43 @@ func (h *EBookHandler) GetEBook(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ebook)
 }
 
+// ListEBooks godoc
+//
+//	@Summary		Listar e-books
+//	@Description	Devuelve la lista de todos los e-books. Requiere autenticación JWT.
+//	@Tags			ebooks
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{array}		models.EBook
+//	@Failure		401	{object}	map[string]string
+//	@Failure		500	{object}	map[string]string
+//	@Router			/ebooks [get]
 func (h *EBookHandler) ListEBooks(w http.ResponseWriter, r *http.Request) {
-	ebooks, err := h.svc.ListEBooks(r.Context())
+	pg, err := h.svc.ListEBooks(r.Context(), repository.PageParams{Page: 1, PageSize: 50})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ListEBooks: %v\n", err)
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
-	if ebooks == nil {
-		ebooks = []*models.EBook{}
-	}
-	writeJSON(w, http.StatusOK, ebooks)
+	writeJSON(w, http.StatusOK, pg.Items)
 }
 
+// UpdateEBook godoc
+//
+//	@Summary		Actualizar e-book
+//	@Description	Actualiza los datos de un e-book existente. Requiere autenticación JWT.
+//	@Tags			ebooks
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string					true	"UUID del e-book"	format(uuid)
+//	@Param			body	body		service.UpdateEBookInput	true	"Campos a actualizar"
+//	@Success		200		{object}	models.EBook
+//	@Failure		400		{object}	map[string]string
+//	@Failure		401		{object}	map[string]string
+//	@Failure		404		{object}	map[string]string
+//	@Failure		500		{object}	map[string]string
+//	@Router			/ebooks/{id} [put]
 func (h *EBookHandler) UpdateEBook(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -110,6 +164,20 @@ func (h *EBookHandler) UpdateEBook(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ebook)
 }
 
+// DeleteEBook godoc
+//
+//	@Summary		Eliminar e-book
+//	@Description	Elimina un e-book por su UUID. Requiere autenticación JWT.
+//	@Tags			ebooks
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"UUID del e-book"	format(uuid)
+//	@Success		204	"Sin contenido"
+//	@Failure		400	{object}	map[string]string
+//	@Failure		401	{object}	map[string]string
+//	@Failure		404	{object}	map[string]string
+//	@Failure		500	{object}	map[string]string
+//	@Router			/ebooks/{id} [delete]
 func (h *EBookHandler) DeleteEBook(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

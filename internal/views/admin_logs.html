@@ -1,0 +1,61 @@
+{{define "title"}}Logs de Auditoría — Admin{{end}}
+{{define "content"}}
+<div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-3">
+        <a href="/admin" class="text-gray-400 hover:text-gray-600 text-sm">← Panel</a>
+        <span class="text-gray-300">/</span>
+        <h1 class="text-2xl font-bold text-gray-800">Logs de Auditoría</h1>
+    </div>
+    <span class="text-sm text-gray-500">{{len .Logs}} registros</span>
+</div>
+
+<div class="bg-white rounded-xl shadow overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <tr>
+                    <th class="px-6 py-3">Actividad</th>
+                    <th class="px-6 py-3">Usuario</th>
+                    <th class="px-6 py-3">Fecha / Hora</th>
+                    <th class="px-6 py-3">ID Registro</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {{range .Logs}}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center gap-1.5">
+                            {{if contains .Activity "created"}}
+                            <span class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
+                            {{else if contains .Activity "deleted"}}
+                            <span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></span>
+                            {{else if contains .Activity "downloaded"}}
+                            <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+                            {{else}}
+                            <span class="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></span>
+                            {{end}}
+                            <span class="font-mono text-gray-700">{{.Activity}}</span>
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 font-mono text-xs text-gray-500">
+                        {{.UserID}}
+                    </td>
+                    <td class="px-6 py-4 text-gray-500 whitespace-nowrap">
+                        {{.CreatedAt.Format "02 Jan 2006 — 15:04:05"}}
+                    </td>
+                    <td class="px-6 py-4 font-mono text-xs text-gray-400">
+                        {{.ID}}
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-gray-400">
+                        No hay registros de auditoría todavía.
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,1129 @@
+basePath: /api/v1
+definitions:
+  handlers.AuthResponse:
+    properties:
+      access_token:
+        description: |-
+          JWT de acceso para autenticar las siguientes peticiones.
+          Inclúyelo como header: Authorization: Bearer <token>
+        example: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        description: Segundos hasta que el token expira.
+        example: 3600
+        type: integer
+      token_type:
+        description: Tipo de token (siempre "bearer").
+        example: bearer
+        type: string
+    type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        description: |-
+          Correo electrónico del usuario.
+          example: user@example.com
+        example: user@example.com
+        type: string
+      password:
+        description: |-
+          Contraseña del usuario.
+          example: password123
+        example: password123
+        type: string
+    type: object
+  handlers.RegisterRequest:
+    properties:
+      email:
+        description: |-
+          Correo electrónico del nuevo usuario.
+          example: newuser@example.com
+        example: newuser@example.com
+        type: string
+      password:
+        description: |-
+          Contraseña del nuevo usuario (mínimo 6 caracteres según Supabase).
+          example: password123
+        example: password123
+        type: string
+    type: object
+  handlers.RegisterResponse:
+    properties:
+      message:
+        description: Mensaje informativo.
+        example: Usuario registrado correctamente. Revisa tu email para confirmar
+          la cuenta.
+        type: string
+    type: object
+  handlers.UploadCoverResponse:
+    properties:
+      cover_path:
+        description: |-
+          Path relativo del archivo en el bucket de Storage.
+          Úsalo para construir la URL pública o una signed URL.
+          example: covers/550e8400-e29b-41d4-a716-446655440000.jpg
+        example: covers/550e8400-e29b-41d4-a716-446655440000.jpg
+        type: string
+      cover_url:
+        description: |-
+          URL pública de la portada (solo si el bucket es público).
+          example: https://xxxx.supabase.co/storage/v1/object/public/ebooks/covers/uuid.jpg
+        example: https://xxxx.supabase.co/storage/v1/object/public/ebooks/covers/uuid.jpg
+        type: string
+    type: object
+  handlers.UploadFileResponse:
+    properties:
+      file_path:
+        description: |-
+          Path relativo del archivo en el bucket de Storage.
+          example: pdf/550e8400-e29b-41d4-a716-446655440000.pdf
+        example: pdf/550e8400-e29b-41d4-a716-446655440000.pdf
+        type: string
+      file_url:
+        description: |-
+          URL pública del archivo (solo si el bucket es público).
+          example: https://xxxx.supabase.co/storage/v1/object/public/ebooks/pdf/uuid.pdf
+        example: https://xxxx.supabase.co/storage/v1/object/public/ebooks/pdf/uuid.pdf
+        type: string
+      format:
+        description: |-
+          Formato del archivo subido (epub, pdf o mobi).
+          example: pdf
+        example: pdf
+        type: string
+    type: object
+  models.Author:
+    properties:
+      bio:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Category:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.EBook:
+    properties:
+      author_id:
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/models.Category'
+        type: array
+      cover_url:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/models.EBookFile'
+        type: array
+      id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.EBookFile:
+    properties:
+      ebook_id:
+        type: string
+      file_url:
+        type: string
+      format:
+        description: '"epub" | "pdf" | "mobi"'
+        type: string
+      id:
+        type: string
+    type: object
+  service.CreateAuthorInput:
+    properties:
+      bio:
+        type: string
+      name:
+        type: string
+    type: object
+  service.CreateCategoryInput:
+    properties:
+      name:
+        type: string
+    type: object
+  service.CreateEBookInput:
+    properties:
+      author_id:
+        type: string
+      cover_url:
+        type: string
+      description:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/service.FileInput'
+        type: array
+      title:
+        type: string
+    type: object
+  service.FileInput:
+    properties:
+      file_url:
+        type: string
+      format:
+        type: string
+    type: object
+  service.UpdateAuthorInput:
+    properties:
+      bio:
+        type: string
+      name:
+        type: string
+    type: object
+  service.UpdateCategoryInput:
+    properties:
+      name:
+        type: string
+    type: object
+  service.UpdateEBookInput:
+    properties:
+      author_id:
+        type: string
+      cover_url:
+        type: string
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: soporte@example.com
+    name: Soporte
+  description: |-
+    API REST para gestión de e-books, autores y categorías.
+    Usa POST /api/v1/auth/login para obtener un token JWT y luego
+    inclúyelo como `Authorization: Bearer <token>` en las peticiones protegidas.
+  license:
+    name: MIT
+  title: E-Book Management API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Autentica al usuario con email y contraseña mediante Supabase Auth.
+        Devuelve un JWT (access_token) que debe usarse en el header
+        `Authorization: Bearer <token>` para los endpoints protegidos.
+      parameters:
+      - description: Credenciales de acceso
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.AuthResponse'
+        "400":
+          description: Body inválido o campos vacíos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Credenciales incorrectas
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Iniciar sesión
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Crea una nueva cuenta de usuario en Supabase Auth.
+        Dependiendo de la configuración de Supabase, puede requerir confirmación por email.
+      parameters:
+      - description: Datos del nuevo usuario
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.RegisterResponse'
+        "400":
+          description: Body inválido o campos vacíos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Email ya registrado u otro error de validación
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Registrar usuario
+      tags:
+      - auth
+  /authors:
+    get:
+      description: Devuelve la lista de todos los autores. Requiere autenticación
+        JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Author'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar autores
+      tags:
+      - autores
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo autor. Requiere autenticación JWT.
+      parameters:
+      - description: Datos del autor
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateAuthorInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Author'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Crear autor
+      tags:
+      - autores
+  /authors/{id}:
+    delete:
+      description: Elimina un autor por su UUID. Requiere autenticación JWT.
+      parameters:
+      - description: UUID del autor
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Sin contenido
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Eliminar autor
+      tags:
+      - autores
+    get:
+      description: Devuelve un autor por su UUID. Requiere autenticación JWT.
+      parameters:
+      - description: UUID del autor
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Author'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obtener autor por ID
+      tags:
+      - autores
+    put:
+      consumes:
+      - application/json
+      description: Actualiza los datos de un autor existente. Requiere autenticación
+        JWT.
+      parameters:
+      - description: UUID del autor
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos a actualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateAuthorInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Author'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Actualizar autor
+      tags:
+      - autores
+  /categories:
+    get:
+      description: Devuelve la lista de todas las categorías. Requiere autenticación
+        JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Category'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar categorías
+      tags:
+      - categorías
+    post:
+      consumes:
+      - application/json
+      description: Crea una nueva categoría temática. Requiere autenticación JWT.
+      parameters:
+      - description: Datos de la categoría
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Crear categoría
+      tags:
+      - categorías
+  /categories/{id}:
+    delete:
+      description: Elimina una categoría por su UUID. Requiere autenticación JWT.
+      parameters:
+      - description: UUID de la categoría
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Sin contenido
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Eliminar categoría
+      tags:
+      - categorías
+    get:
+      description: Devuelve una categoría por su UUID. Requiere autenticación JWT.
+      parameters:
+      - description: UUID de la categoría
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obtener categoría por ID
+      tags:
+      - categorías
+    put:
+      consumes:
+      - application/json
+      description: Actualiza el nombre de una categoría existente. Requiere autenticación
+        JWT.
+      parameters:
+      - description: UUID de la categoría
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos a actualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Actualizar categoría
+      tags:
+      - categorías
+  /ebooks:
+    get:
+      description: Devuelve la lista de todos los e-books. Requiere autenticación
+        JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.EBook'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar e-books
+      tags:
+      - ebooks
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo e-book. Requiere autenticación JWT.
+      parameters:
+      - description: Datos del e-book
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateEBookInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.EBook'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Crear e-book
+      tags:
+      - ebooks
+  /ebooks/{id}:
+    delete:
+      description: Elimina un e-book por su UUID. Requiere autenticación JWT.
+      parameters:
+      - description: UUID del e-book
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Sin contenido
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Eliminar e-book
+      tags:
+      - ebooks
+    get:
+      description: Devuelve un e-book por su UUID. Requiere autenticación JWT.
+      parameters:
+      - description: UUID del e-book
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EBook'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obtener e-book por ID
+      tags:
+      - ebooks
+    put:
+      consumes:
+      - application/json
+      description: Actualiza los datos de un e-book existente. Requiere autenticación
+        JWT.
+      parameters:
+      - description: UUID del e-book
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos a actualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateEBookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EBook'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Actualizar e-book
+      tags:
+      - ebooks
+  /ebooks/{id}/author:
+    get:
+      description: Devuelve el autor asociado a un e-book específico. Requiere autenticación
+        JWT.
+      parameters:
+      - description: UUID del e-book
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Author'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obtener autor por ID de e-book
+      tags:
+      - autores
+  /ebooks/{id}/cover:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        Sube una imagen de portada para un e-book existente y actualiza su registro.
+        Formatos aceptados: JPG, JPEG, PNG, WebP. Tamaño máximo: 5 MB.
+        Requiere autenticación JWT.
+      parameters:
+      - description: UUID del e-book
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Imagen de portada (JPG/PNG/WebP, máx 5 MB)
+        in: formData
+        name: cover
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UploadCoverResponse'
+        "400":
+          description: UUID inválido, formato no soportado o archivo muy grande
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: No autenticado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: E-book no encontrado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno o de storage
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Subir portada de e-book
+      tags:
+      - uploads
+  /ebooks/{id}/file:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        Sube un archivo de e-book (PDF, EPUB o MOBI) y lo asocia al e-book indicado.
+        Tamaño máximo: 50 MB. Requiere autenticación JWT.
+      parameters:
+      - description: UUID del e-book
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Archivo del libro (PDF/EPUB/MOBI, máx 50 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Formato del archivo
+        enum:
+        - pdf
+        - epub
+        - mobi
+        in: formData
+        name: format
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UploadFileResponse'
+        "400":
+          description: UUID inválido, formato no soportado o archivo muy grande
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: No autenticado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: E-book no encontrado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno o de storage
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Subir archivo de e-book
+      tags:
+      - uploads
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT obtenido de POST /api/v1/auth/login. Formato: `Bearer <token>`'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
